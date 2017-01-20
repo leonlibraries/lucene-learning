@@ -156,6 +156,8 @@ public class IndexFiles {
                     return FileVisitResult.CONTINUE;
                 }
             });
+        } else {
+            indexDoc(writer, path, Files.getLastModifiedTime(path).toMillis());
         }
 
     }
