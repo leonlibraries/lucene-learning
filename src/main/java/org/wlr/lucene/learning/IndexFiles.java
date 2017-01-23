@@ -192,6 +192,12 @@ public class IndexFiles {
             // If that's not the case searching for special characters will fail.
             doc.add(new TextField("contents", new BufferedReader(new InputStreamReader(stream, StandardCharsets.UTF_8))));
 
+            // store 只管结果返回展示部分的情况，yes 可以展示出来，no 展示不出来，
+            // StringField IndexOptions 为 DOCS，因此允许搜索，但不用分词器分词，
+            // 当 Store 为 NO 的时候， 该字段可以匹配搜索但是展示不出来
+            Field ext = new StringField("ext", "synchronized", Field.Store.YES);
+            doc.add(ext);
+
             if (writer.getConfig().getOpenMode() == IndexWriterConfig.OpenMode.CREATE) {
                 // New index, so we just add the document (no old document can be there):
                 System.out.println("adding " + file);

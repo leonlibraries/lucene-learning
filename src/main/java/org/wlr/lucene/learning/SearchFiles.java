@@ -22,10 +22,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.queryparser.classic.QueryParser;
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.Query;
-import org.apache.lucene.search.ScoreDoc;
-import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.search.*;
 import org.apache.lucene.store.FSDirectory;
 
 import java.io.BufferedReader;
@@ -92,6 +89,8 @@ public class SearchFiles {
 
         IndexReader reader = DirectoryReader.open(FSDirectory.open(Paths.get(index)));
         IndexSearcher searcher = new IndexSearcher(reader);
+
+        // 标准分词器
         Analyzer analyzer = new StandardAnalyzer();
 
         BufferedReader in = null;
@@ -102,6 +101,8 @@ public class SearchFiles {
         }
 
         QueryParser parser = new QueryParser(field, analyzer);
+        QueryParser parserExt = new QueryParser("ext", analyzer);
+
         while (true) {
             if (queries == null && queryString == null) {
                 System.out.println("Enter query: ");
@@ -119,20 +120,25 @@ public class SearchFiles {
             }
 
             Query query = parser.parse(line);
+            Query queryExt = parserExt.parse(line);
+
+            // 多字段匹配
+            BooleanQuery booleanQuery = new BooleanQuery.Builder().add(query, BooleanClause.Occur.SHOULD)
+                    .add(queryExt, BooleanClause.Occur.SHOULD).build();
 
             System.out.println("Searching for: " + query.toString(field));
 
             if (repeat > 0) {                   // repeat & time as benchmark
                 Date start = new Date();
                 for (int i = 0; i < repeat; i++) {
-                    searcher.search(query, 100);
+                    searcher.search(booleanQuery, 100);
                 }
 
                 Date end = new Date();
                 System.out.println("Time: " + (end.getTime() - start.getTime()) + "ms");
             }
 
-            doPagingSearch(in, searcher, query, hitsPerPage, raw, queries == null && queryString == null);
+            doPagingSearch(in, searcher, booleanQuery, hitsPerPage, raw, queries == null && queryString == null);
 
             if (queryString != null) {
                 break;
